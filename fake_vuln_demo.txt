@@ -1,0 +1,3 @@
+# This file exists ONLY to simulate a leaked credential for testing scanners.
+# It is not a real secret. Remove it when done testing.
+GITHUB_TOKEN=ghp_FAKE1234567890demoKEYdontuse0000
