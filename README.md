@@ -27,3 +27,6 @@ UI: http://localhost:5173 (proxied API so it works without CORS fuss)
 - `server/db.js` SQLite setup + seed + repo helpers.
 - `src/App.jsx` React UI (filters, entry list, add form).
 - `src/api.js` small fetch helpers.
+
+## Security testing note
+- `fake_vuln_demo.txt` intentionally holds a dummy GitHub token pattern for scanner/alert testing. It is not real—delete after testing.
