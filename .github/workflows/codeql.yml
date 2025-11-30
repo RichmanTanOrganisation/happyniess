@@ -1,0 +1,42 @@
+name: "CodeQL"
+
+on:
+  push:
+    branches: ["main"]          # optional, keep if you want scans on direct pushes too
+  pull_request:
+    branches: ["main"]          # runs on every PR targeting main
+    types: [opened, synchronize, reopened]
+
+jobs:
+  analyze:
+    name: Analyze CodeQL
+    runs-on: ubuntu-latest
+
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ["javascript", "python"]   # adjust to your repo
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Autobuild
+      # or replace this step with your own build (mvn, gradle, npm, etc.)
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
