@@ -44,9 +44,3 @@ app.delete("/api/entries/:id", (req, res) => {
 app.listen(PORT, () => {
   console.log(`API ready on http://localhost:${PORT}`);
 });
-
-
-const minimist = require("minimist");
-
-const args = minimist(process.argv.slice(2));
-console.log("Hello from vuln test. Args:", args);

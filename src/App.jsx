@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { createEntry, deleteEntry, fetchEntries } from "./api.js";
+import { createEntry, deleteEntry, fetchEntries, updateEntry } from "./api.js";
 
 const moods = ["grateful", "calm", "energized", "optimistic", "curious"];
 
@@ -9,11 +9,14 @@ export default function App() {
   const [saving, setSaving] = useState(false);
   const [query, setQuery] = useState("");
   const [moodFilter, setMoodFilter] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
+  const [sort, setSort] = useState("newest");
 
   const [title, setTitle] = useState("");
   const [note, setNote] = useState("");
   const [mood, setMood] = useState(moods[0]);
   const [tags, setTags] = useState("");
+  const [editingId, setEditingId] = useState(null);
 
   useEffect(() => {
     refresh();
@@ -37,7 +40,7 @@ export default function App() {
     if (!title.trim() || !note.trim()) return;
     setSaving(true);
     try {
-      await createEntry({
+      const payload = {
         title: title.trim(),
         note: note.trim(),
         mood,
@@ -45,11 +48,18 @@ export default function App() {
           .split(",")
           .map((t) => t.trim())
           .filter(Boolean),
-      });
+      };
+
+      if (editingId) {
+        await updateEntry(editingId, payload);
+      } else {
+        await createEntry(payload);
+      }
       setTitle("");
       setNote("");
       setTags("");
       setMood(moods[0]);
+      setEditingId(null);
       refresh();
     } catch (err) {
       console.error(err);
@@ -72,26 +82,71 @@ export default function App() {
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase();
-    return entries.filter((entry) => {
+    const filteredEntries = entries.filter((entry) => {
       const matchesQuery =
         entry.title.toLowerCase().includes(q) || entry.note.toLowerCase().includes(q);
       const matchesMood = moodFilter ? entry.mood === moodFilter : true;
-      return matchesQuery && matchesMood;
+      const matchesTag = tagFilter ? entry.tags?.includes(tagFilter) : true;
+      return matchesQuery && matchesMood && matchesTag;
     });
-  }, [entries, query, moodFilter]);
+
+    return filteredEntries.sort((a, b) => {
+      if (sort === "oldest") {
+        return new Date(a.created_at) - new Date(b.created_at);
+      }
+      if (sort === "title") {
+        return a.title.localeCompare(b.title);
+      }
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }, [entries, query, moodFilter, tagFilter, sort]);
 
   const stats = useMemo(() => {
     const moodsCount = entries.reduce((acc, item) => {
       acc[item.mood] = (acc[item.mood] ?? 0) + 1;
       return acc;
     }, {});
+    const tagCounts = entries
+      .flatMap((e) => e.tags ?? [])
+      .reduce((acc, tag) => {
+        acc[tag] = (acc[tag] ?? 0) + 1;
+        return acc;
+      }, {});
     return {
       total: entries.length,
       topMood:
         Object.entries(moodsCount).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—",
       tags: entries.flatMap((e) => e.tags ?? []).length,
+      moodsCount,
+      topTags: Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 4),
     };
   }, [entries]);
+
+  const availableTags = useMemo(
+    () =>
+      Array.from(new Set(entries.flatMap((entry) => entry.tags ?? []))).sort((a, b) =>
+        a.localeCompare(b)
+      ),
+    [entries]
+  );
+
+  const startEdit = (entry) => {
+    setEditingId(entry.id);
+    setTitle(entry.title);
+    setNote(entry.note);
+    setMood(entry.mood);
+    setTags(entry.tags?.join(", ") || "");
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setTitle("");
+    setNote("");
+    setTags("");
+    setMood(moods[0]);
+  };
 
   return (
     <div className="app">
@@ -113,6 +168,22 @@ export default function App() {
               <strong>{stats.tags}</strong> tags logged
             </span>
           </div>
+          <div className="mood-chart">
+            {moods.map((moodKey) => (
+              <div key={moodKey} className="mood-bar">
+                <span>{moodKey}</span>
+                <div className="bar-track">
+                  <div
+                    className="bar-fill"
+                    style={{
+                      width: `${((stats.moodsCount[moodKey] ?? 0) / (stats.total || 1)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="bar-count">{stats.moodsCount[moodKey] ?? 0}</span>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="filters">
           <input
@@ -128,6 +199,19 @@ export default function App() {
               </option>
             ))}
           </select>
+          <select value={tagFilter} onChange={(e) => setTagFilter(e.target.value)}>
+            <option value="">All tags</option>
+            {availableTags.map((tag) => (
+              <option key={tag} value={tag}>
+                #{tag}
+              </option>
+            ))}
+          </select>
+          <select value={sort} onChange={(e) => setSort(e.target.value)}>
+            <option value="newest">Newest first</option>
+            <option value="oldest">Oldest first</option>
+            <option value="title">Title A-Z</option>
+          </select>
           <button className="ghost-btn" onClick={refresh} disabled={loading}>
             {loading ? "Refreshing..." : "Refresh"}
           </button>
@@ -137,7 +221,14 @@ export default function App() {
       <div className="grid">
         <section className="panel">
           <h2>
-            Add a note <small>{saving ? "Saving..." : "Keep it short and honest."}</small>
+            {editingId ? "Edit note" : "Add a note"}{" "}
+            <small>
+              {saving
+                ? "Saving..."
+                : editingId
+                  ? "Update and press save."
+                  : "Keep it short and honest."}
+            </small>
           </h2>
           <form onSubmit={handleCreate}>
             <label>
@@ -179,15 +270,37 @@ export default function App() {
               </label>
             </div>
             <button className="solid-btn" type="submit" disabled={saving}>
-              {saving ? "Saving..." : "Log it"}
+              {saving ? "Saving..." : editingId ? "Save changes" : "Log it"}
             </button>
+            {editingId ? (
+              <button className="ghost-btn" type="button" onClick={cancelEdit}>
+                Cancel edit
+              </button>
+            ) : null}
           </form>
         </section>
 
         <section className="panel">
           <h2>
-            Recent entries <small>{filtered.length} showing</small>
+            Recent entries{" "}
+            <small>
+              {filtered.length} showing {tagFilter ? `(tag: #${tagFilter})` : ""}
+            </small>
           </h2>
+          {stats.topTags.length ? (
+            <div className="top-tags">
+              {stats.topTags.map(([tag, count]) => (
+                <button
+                  key={tag}
+                  className={`tag chip ${tagFilter === tag ? "active" : ""}`}
+                  type="button"
+                  onClick={() => setTagFilter(tagFilter === tag ? "" : tag)}
+                >
+                  #{tag} · {count}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {filtered.length === 0 ? (
             <div className="empty">No entries yet. Start with one small win.</div>
           ) : (
@@ -211,6 +324,9 @@ export default function App() {
                   <div className="meta">
                     <span>{new Date(entry.created_at).toLocaleString()}</span>
                     <div className="actions">
+                      <button className="ghost-btn" onClick={() => startEdit(entry)}>
+                        Edit
+                      </button>
                       <button className="ghost-btn" onClick={() => handleDelete(entry.id)}>
                         Delete
                       </button>
