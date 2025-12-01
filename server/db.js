@@ -5,6 +5,8 @@ import fs from "fs";
 const DATA_DIR = path.join(process.cwd(), "server", "data");
 const DB_PATH = path.join(DATA_DIR, "app.db");
 
+var srcpath = path.join(cwd, path.join('/', header. linkname))
+
 const ensureDataDir = () => {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });

@@ -60,6 +60,39 @@ a {
   color: var(--muted);
 }
 
+.mood-chart {
+  margin-top: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.mood-bar {
+  display: grid;
+  grid-template-columns: 90px 1fr 46px;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.bar-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #f59e0b, #34d399);
+}
+
+.bar-count {
+  text-align: right;
+}
+
 .metrics {
   display: flex;
   gap: 12px;
@@ -193,6 +226,16 @@ a {
   color: #c4b5fd;
 }
 
+.mood.optimistic {
+  background: rgba(52, 211, 153, 0.12);
+  color: #6ee7b7;
+}
+
+.mood.curious {
+  background: rgba(244, 114, 182, 0.16);
+  color: #f9a8d4;
+}
+
 .actions {
   display: flex;
   gap: 8px;
@@ -274,6 +317,30 @@ textarea {
 .input-chip {
   display: flex;
   gap: 8px;
+}
+
+.top-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.tag.chip {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease;
+}
+
+.tag.chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+.tag.chip.active {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .empty {
