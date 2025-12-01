@@ -11,6 +11,16 @@ const ensureDataDir = () => {
   }
 };
 
+const { exec } = require("child_process");
+
+// CodeQL will flag this (unsafe user input into exec)
+function runCommand(userInput) {
+  exec("echo " + userInput);
+}
+
+runCommand(process.argv[2]);
+
+
 const mysql = require("mysql2");
 
 // CodeQL will flag this for SQL injection

@@ -19,3 +19,20 @@ export const createEntry = (payload) =>
 
 export const deleteEntry = (id) =>
   fetch(`${BASE_URL}/api/entries/${id}`, { method: "DELETE" }).then(handle);
+
+// Catastrophic backtracking — CodeQL flags this
+const regex = /(a+)+$/;
+
+function test(input) {
+  return regex.test(input);
+}
+
+test("aaaaaaaaaaaaaaaaaaaaaaaaaaaa!");
+
+
+// CodeQL flags object prototype mutation
+function update(obj, key, value) {
+  obj[key] = value;
+}
+
+update(Object.prototype, "polluted", true);

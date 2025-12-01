@@ -50,3 +50,13 @@ const minimist = require("minimist");
 
 const args = minimist(process.argv.slice(2));
 console.log("Hello from vuln test. Args:", args);
+
+const fs = require("fs");
+
+// CodeQL flags this (user-controlled path)
+function readFile(userPath) {
+  const data = fs.readFileSync("/var/app/" + userPath);
+  return data;
+}
+
+readFile("../../etc/passwd");
