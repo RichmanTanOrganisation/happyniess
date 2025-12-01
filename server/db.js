@@ -11,6 +11,19 @@ const ensureDataDir = () => {
   }
 };
 
+const mysql = require("mysql2");
+
+// CodeQL will flag this for SQL injection
+function getUser(username) {
+  const query = "SELECT * FROM users WHERE username = '" + username + "'";
+  return query;
+}
+
+getUser("admin");
+
+// CodeQL + Secret Scanning will flag this
+const API_KEY = "AIzaSyDUMMY-KEY-NOT-REAL-123456789";
+
 export const initDb = () => {
   ensureDataDir();
   const db = new Database(DB_PATH);
